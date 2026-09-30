@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive World Map Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <!-- Tailwind CSS CDN -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        #map { height: 100vh; width: 100vw; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans overflow-hidden">
+
+    <!-- Map Container -->
+    <div id="map" class="z-0"></div>
+
+    <!-- UI Overlay Controls -->
+    <div class="absolute top-4 left-14 z-[1000] w-72 md:w-96 glass-panel p-4 rounded-xl shadow-2xl transition-all duration-300">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-2">Global Pulse Dashboard</h1>
+        
+        <!-- Search Bar -->
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="search-input" placeholder="Search country or city..." class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500">
+            <button id="search-btn" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">Go</button>
+        </div>
+
+        <!-- Dynamic Metrics Display -->
+        <div id="metrics-display" class="space-y-2 text-sm text-slate-300">
+            <p class="text-xs text-slate-400 italic">Click or hover over a location on the map to stream dynamic global intelligence.</p>
+        </div>
+    </div>
+
+    <!-- Social Share & Install Panel -->
+    <div class="absolute bottom-4 right-4 z-[1000] glass-panel p-4 rounded-xl shadow-2xl w-72">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Share & Utilities</h2>
+        
+        <div class="grid grid-cols-2 gap-2 mb-3">
+            <button id="share-x" class="bg-black hover:bg-slate-900 text-xs font-medium py-2 rounded-lg text-center transition">Post to X</button>
+            <button id="share-link" class="bg-slate-800 hover:bg-slate-700 text-xs font-medium py-2 rounded-lg text-center transition">Copy Link</button>
+        </div>
+
+        <button id="install-btn" class="hidden w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-xs font-bold py-2 rounded-lg text-center transition text-white">
+            📲 Install App to Device
+        </button>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com"></script>
+    <script>
+        // Initialize Map with Realistic Satellite/Terrain hybrid tiles
+        const map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
+        
+        const realisticTiles = L.tileLayer('https://arcgisonline.com{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }).addTo(map);
+
+        // Dummy geocoding / data generation for dynamic demo interaction
+        function updateMetrics(name, lat, lng) {
+            const connectivity = Math.floor(Math.random() * 40) + 60;
+            const pop = (Math.random() * 150 + 1).toFixed(1);
+            const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('metrics-display').innerHTML = `
+                <div class="border-b border-slate-700/50 pb-2 mb-2">
+                    <h3 class="font-bold text-lg text-white">${name}</h3>
+                    <span class="text-xs text-slate-400">Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-slate-800/40 p-2 rounded">
+                        <span class="block text-slate-400">Local Time</span>
+                        <span class="font-semibold text-blue-400">${time}</span>
+                    </div>
+                    <div class="bg-slate-800/40 p-2 rounded">
+                        <span class="block text-slate-400">Connectivity</span>
+                        <span class="font-semibold text-emerald-400">${connectivity}% Live</span>
+                    </div>
+                    <div class="bg-slate-800/40 p-2 rounded">
+                        <span class="block text-slate-400">Est. Pop</span>
+                        <span class="font-semibold text-white">${pop}M</span>
+                    </div>
+                    <div class="bg-slate-800/40 p-2 rounded">
+                        <span class="block text-slate-400">Status</span>
+                        <span class="font-semibold text-amber-400">Stable</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Handle Map Clicks
+        map.on('click', function(e) {
+            updateMetrics("Custom Location Pin", e.latlng.lat, e.latlng.lng);
+            L.marker(e.latlng).addTo(map).bindPopup("Explored Location").openPopup();
+        });
+
+        // Search Routing Configuration
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const query = document.getElementById('search-input').value;
+            if(query) {
+                fetch(`https://openstreetmap.org{encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.length > 0) {
+                            const target = data[0];
+                            const lat = parseFloat(target.lat);
+                            const lon = parseFloat(target.lon);
+                            map.flyTo([lat, lon], 5);
+                            updateMetrics(target.display_name.split(',')[0], lat, lon);
+                            L.marker([lat, lon]).addTo(map);
+                        } else {
+                            alert("Location not found.");
+                        }
+                    });
+            }
+        });
+
+        // Social Shares Utility
+        document.getElementById('share-x').addEventListener('click', function() {
+            const text = encodeURIComponent("Check out this live interactive world map web app dashboard!");
+            window.open(`https://twitter.com{text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+        });
+
+        document.getElementById('share-link').addEventListener('click', function() {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Shareable application URL copied to your clipboard!");
+        });
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker Registered Successfully', reg.scope))
+                    .catch(err => console.log('Service Worker Registration Failed', err));
+            });
+        }
+
+        // PWA Installation Mechanism
+        let deferredPrompt;
+        const installBtn = document.getElementById('install-btn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+        installBtn.addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        installBtn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
