@@ -1,0 +1,17 @@
+{
+  "name": "Global Pulse Interactive Map",
+  "short_name": "GlobalPulse",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme-color": "#0f172a",
+  "orientation": "portrait-preferred",
+  "icons": [
+    {
+      "src": "https://flaticon.com",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
